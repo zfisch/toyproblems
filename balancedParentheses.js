@@ -22,8 +22,8 @@ var balancedParens = function(input){
   for (var i=0; i<input.length; i++){
     if (pairs[input[i]]) stack.push(input[i]);
     if (closerParens[input[i]]){
-      var closer = pairs[stack[stack.length-1]] === input[i] ? stack.pop() : false;
-      if(!closer) return false
+      var correctCloser = pairs[stack[stack.length-1]] === input[i] ? stack.pop() : false;
+      if(!correctCloser) return false
     }
   }
 
