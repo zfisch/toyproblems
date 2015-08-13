@@ -1,10 +1,47 @@
 //Hashtable with insert, retrieve, and remove.
-//Handles collisions.
+//Handles collisions and resizes whenever storage gets above 75% or below 25% storage limit.
 
 var makeHashTable = function(){
   var result = {};
   var storage = [];
-  var storageLimit = 1000;
+  var storageLimit = 4;
+  var size = 0;
+
+  //Flag to tell insert/remove functions to hold size and prevent continuous rehashing during rehash process.
+  //During rehash, the size is not incremented or decremented.
+  var keepSize = false;
+
+  var checkSize = function() {
+    if (size > (0.75 * storageLimit)) {
+      var tuples = gatherTuplesAndEmptyStorage();
+      storageLimit = (storageLimit * 2);
+      rehash(tuples);
+    } else if (size < (0.25 * storageLimit)) {
+      var tuples = gatherTuplesAndEmptyStorage();
+      storageLimit = (storageLimit / 2);
+      rehash(tuples);
+    }
+    console.log(result.getStorageSizeAndSize());
+  };
+
+  var rehash = function(tuples) {
+    keepSize = true;
+    tuples.forEach(function(tuple){
+        result.insert(tuple[0], tuple[1]);
+    });
+    keepSize = false;
+  };
+
+  var gatherTuplesAndEmptyStorage = function() {
+    var tuples = [];
+    storage.forEach(function(bucket){
+      bucket.forEach(function(tuple){
+        tuples.push(tuple);
+      });
+    });
+    storage = [];
+    return tuples;
+  };
 
   result.insert = function(key, value) {
     var index = getIndexBelowMaxForKey(key, storageLimit);
@@ -13,6 +50,10 @@ var makeHashTable = function(){
     var updatedTuple = false;
     if (bucket === undefined) {
       storage[index] = [tuple];
+      if (!keepSize) {
+        size++;
+        checkSize();
+      }
     } else {
       for (var i=0; i<bucket.length; i++) {
         if (bucket[i][0] === key) {
@@ -21,6 +62,10 @@ var makeHashTable = function(){
         }
       }
       if (!updatedTuple) bucket.push(tuple);
+      if (!keepSize) {
+        size++;
+        checkSize();
+      }
     }
   };
 
@@ -39,9 +84,18 @@ var makeHashTable = function(){
     var bucket = storage[index];
     if (bucket === undefined) return null;
     for (var i=0; i<bucket.length; i++) {
-      if (bucket[i][0] === key) return bucket.splice(i, 1);
+      if (bucket[i][0] === key) {
+        bucket.splice(i, 1);
+        if (!keepSize) {
+          size--;
+          checkSize();
+        }
+      }
     }
-    return null;
+  };
+
+  result.getStorageSizeAndSize = function() {
+    return { 'storageLimit': storageLimit, 'size': size };
   };
 
   return result;
